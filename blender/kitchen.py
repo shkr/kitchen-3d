@@ -59,11 +59,11 @@ WALL_D = 350
 # hob wall: left unit (glass below), chimney opening, right unit; the corner 350 belongs to the sink-wall units
 HOB_WALL = [("tower", 575), ("chimney", 600), ("door", 275)]
 # sink wall units from the corner (elevation: 650 | 350 | 900 | 900 | 50 filler)
-SINK_WALL = [("door", 650), ("door", 350), ("glass2", 900), ("tall_open", 900), ("filler", 50)]   # glass pair in the middle
+SINK_WALL = [("door", 650), ("door", 350), ("glass2", 900), ("door2", 900), ("filler", 50)]   # glass pair in the middle
 
 MICROWAVE = (455, 262, 344)  # w, h, d (mm): standard 20 L solo microwave (LG MS2043)
 OVEN = (457, 305, 279)       # w, h, d (mm): AGARO Marvel 25 L OTG
-OPEN_H = 457                 # sink wall, W/M end: 1.5ft open shelf at the bottom, one tall cabinet above to the top
+OPEN_H = 457                 # sink wall: 1.5ft open shelf along the whole wall, tall cabinets above it
 TOWER_H, TOWER_D = 914, 430  # left of the chimney: 3ft glass-door appliance cabinet, deeper so the microwave fits
 HOB_W = 600
 SINK_LEN, SINK_DEP = 960, 500      # single bowl with drainer (site photo): bowl at the W/M end, drainer towards the corner
@@ -461,49 +461,34 @@ for i, (kind, w) in enumerate(HOB_WALL):
     x = x1
 HOB_WALL_END = x                          # 1450 = ROOM_W - WALL_D
 
-# sink wall
+# sink wall: a 1.5ft open shelf runs the length of the wall; above it every piece is one tall cabinet to the cover strip
+OZ1 = WALL_Z0 + OPEN_H
+SINK_WALL_END = sum(w for _, w in SINK_WALL)
+shell("SinkWall_Shelf", ROOM_W - WALL_D, ROOM_W, 0, SINK_WALL_END, WALL_Z0, OZ1, False)
+box("SinkWall_ShelfGlow", ROOM_W - 21, ROOM_W - 18, WALL_D + 20, SINK_WALL_END - 20, WALL_Z0 + 25, OZ1 - 25, M["warm"])
 y = 0
 for i, (kind, w) in enumerate(SINK_WALL):
     y0, y1 = y, y + w
     vis0 = max(y0, WALL_D)                # the first 350 hides behind the hob-wall units in the corner
-    if kind == "glass2":
-        shell(f"SinkWall_Unit{i}", ROOM_W - WALL_D + SHUTTER_T, ROOM_W, y0, y1, WALL_Z0, WZ1, False)
-        box(f"SinkWall_Unit{i}_Loft", ROOM_W - WALL_D + SHUTTER_T, ROOM_W, y0, y1, WZ1, LZ1, M["carcass"])
-    elif kind == "tall_open":
-        OZ1 = WALL_Z0 + OPEN_H
-        shell(f"SinkWall_Unit{i}_Open", ROOM_W - WALL_D, ROOM_W, y0, y1, WALL_Z0, OZ1, False)
-        box(f"SinkWall_Unit{i}_OpenGlow", ROOM_W - 21, ROOM_W - 18, y0 + 20, y1 - 20, WALL_Z0 + 25, OZ1 - 25, M["warm"])
-        box(f"SinkWall_Unit{i}", ROOM_W - WALL_D + SHUTTER_T, ROOM_W, y0, y1, OZ1, LZ1, M["carcass"])
-    else:
-        box(f"SinkWall_Unit{i}", ROOM_W - WALL_D + SHUTTER_T, ROOM_W, y0, y1, WALL_Z0, LZ1, M["carcass"])
+    mid = (y0 + y1) / 2
     if kind == "filler":
-        box(f"SinkWall_Filler{i}", ROOM_W - WALL_D, ROOM_W, y0, y1, WALL_Z0, LZ1, M["wall"])
-    elif kind == "glass2":                # lit glass pair with two glass shelves
-        mid = (y0 + y1) / 2
-        box(f"SinkWall_Unit{i}_Glow", ROOM_W - 25, ROOM_W - 20, y0 + 20, y1 - 20, WALL_Z0 + 20, WZ1 - 20, M["warm"])
-        for k, sz in enumerate((WALL_Z0 + WALL_H / 3, WALL_Z0 + 2 * WALL_H / 3)):
+        box(f"SinkWall_Filler{i}", ROOM_W - WALL_D, ROOM_W, y0, y1, OZ1, LZ1, M["wall"])
+    elif kind == "glass2":                # lit glass pair, same height as its neighbours, with glass shelves
+        shell(f"SinkWall_Unit{i}", ROOM_W - WALL_D + SHUTTER_T, ROOM_W, y0, y1, OZ1, LZ1, False)
+        box(f"SinkWall_Unit{i}_Glow", ROOM_W - 21, ROOM_W - 18, y0 + 20, y1 - 20, OZ1 + 25, LZ1 - 25, M["warm"])
+        for k in (1, 2, 3):
+            sz = OZ1 + (LZ1 - OZ1) * k / 4
             box(f"SinkWall_Unit{i}_Shelf{k}", ROOM_W - WALL_D + SHUTTER_T + 10, ROOM_W - 25, y0 + 20, y1 - 20, sz - 4, sz + 4,
                 M["shelf_glass"])
-        wall_front(f"SinkWall_Unit{i}a", y0, mid, WALL_Z0, WZ1, False, "glass")
-        wall_front(f"SinkWall_Unit{i}b", mid, y1, WALL_Z0, WZ1, False, "glass")
-    elif kind == "door2":
-        mid = (y0 + y1) / 2
-        wall_front(f"SinkWall_Unit{i}a", y0, mid, WALL_Z0, WZ1, False, "door")
-        wall_front(f"SinkWall_Unit{i}b", mid, y1, WALL_Z0, WZ1, False, "door")
-    elif kind == "tall_open":             # one tall cabinet: a pair of full-height doors over the open shelf
-        mid = (y0 + y1) / 2
-        wall_front(f"SinkWall_Unit{i}a", y0, mid, OZ1, LZ1, False, "door")
-        wall_front(f"SinkWall_Unit{i}b", mid, y1, OZ1, LZ1, False, "door")
+        wall_front(f"SinkWall_Unit{i}a", y0, mid, OZ1, LZ1, False, "glass")
+        wall_front(f"SinkWall_Unit{i}b", mid, y1, OZ1, LZ1, False, "glass")
     else:
-        wall_front(f"SinkWall_Unit{i}", vis0, y1, WALL_Z0, WZ1, False, "door")
-    if kind not in ("filler", "tall_open"):
-        if kind in ("door2", "glass2"):
-            wall_front(f"SinkWall_Loft{i}a", y0, (y0 + y1) / 2, WZ1, LZ1, False, "door")
-            wall_front(f"SinkWall_Loft{i}b", (y0 + y1) / 2, y1, WZ1, LZ1, False, "door")
+        box(f"SinkWall_Unit{i}", ROOM_W - WALL_D + SHUTTER_T, ROOM_W, y0, y1, OZ1, LZ1, M["carcass"])
+        if kind in ("door2", "tall_open"):
+            wall_front(f"SinkWall_Unit{i}a", y0, mid, OZ1, LZ1, False, "door")
+            wall_front(f"SinkWall_Unit{i}b", mid, y1, OZ1, LZ1, False, "door")
         else:
-            wall_front(f"SinkWall_Loft{i}", vis0, y1, WZ1, LZ1, False, "door")
-    if kind != "tall_open":
-        box(f"SinkWall_Profile{i}", ROOM_W - WALL_D, ROOM_W - WALL_D + 18, vis0, y1, WZ1 - 6, WZ1 + 6, M["steel"])
+            wall_front(f"SinkWall_Unit{i}", vis0, y1, OZ1, LZ1, False, "door")
     y = y1
 # 70 mm cover panel from the lofts to the ceiling, both walls
 box("HobWall_TopCover", 0, ROOM_W - WALL_D, 0, WALL_D, LZ1, CEIL, M["wall"])
@@ -624,18 +609,13 @@ dim("hs_counter", (SXD, DEPTH + 60, 0), (SXD, DEPTH + 60, COUNTER_H), f"{COUNTER
 # sink-wall upper cabinets: heights at the back-wall end, in front of the shutters
 UXD, UY = ROOM_W - WALL_D - 40, sum(w for _, w in SINK_WALL) - 120
 y = 0
-for i, (kind, w) in enumerate(SINK_WALL):    # each piece: wall unit and loft heights near its left edge
-    if kind == "tall_open":
-        py = y + 60
-        dim(f"hs_open{i}", (UXD, py, WALL_Z0), (UXD, py, WALL_Z0 + OPEN_H), f"{OPEN_H} open", "sink")
-        dim(f"hs_tall{i}", (UXD, py, WALL_Z0 + OPEN_H), (UXD, py, LZ1), f"{LZ1 - WALL_Z0 - OPEN_H}", "sink")
-        dim(f"hs_cover{i}", (UXD, py, LZ1), (UXD, py, CEIL), f"{CEIL - LZ1}", "sink")
-    elif kind != "filler":
+for i, (kind, w) in enumerate(SINK_WALL):    # each piece: tall cabinet and cover heights near its left edge
+    if kind != "filler":
         py = max(y, WALL_D) + 60
-        dim(f"hs_wall{i}", (UXD, py, WALL_Z0), (UXD, py, WZ1), f"{WALL_H}", "sink")
-        dim(f"hs_loft{i}", (UXD, py, WZ1), (UXD, py, LZ1), f"{LOFT_H}", "sink")
+        dim(f"hs_tall{i}", (UXD, py, OZ1), (UXD, py, LZ1), f"{LZ1 - OZ1}", "sink")
         dim(f"hs_cover{i}", (UXD, py, LZ1), (UXD, py, CEIL), f"{CEIL - LZ1}", "sink")
     y += w
+dim("hs_open", (UXD, WALL_D + 60, WALL_Z0), (UXD, WALL_D + 60, OZ1), f"{OPEN_H} open shelf", "sink")
 dim("hs_upper", (UXD, UY + 90, WALL_Z0), (UXD, UY + 90, CEIL), f"{UPPER_TOTAL} total to ceiling", "sink", left=True)
 dim("hs_gap", (UXD, UY, RAISED_TOP), (UXD, UY, WALL_Z0), f"{WALL_Z0 - RAISED_TOP} above slab", "sink", left=True)
 WY = TOWER_D + 40

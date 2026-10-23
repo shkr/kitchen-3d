@@ -15,7 +15,12 @@ open(sys.argv[1], "w").write(
     'body{margin:0;font:14px system-ui,sans-serif}[hidden]{display:none!important}</style>\n'
     '</head>\n<body>\n' + s + '\n</body>\n</html>\n')
 PY
-git -C "$tmp" commit -qam "${1:-Update kitchen model}"
+mkdir -p "$tmp/blender" "$tmp/web" "$tmp/renders"           # source and renders travel with the page
+cp blender/kitchen.py "$tmp/blender/"
+cp web/viewer.html web/build.py web/deploy.sh "$tmp/web/"
+cp out/*.png "$tmp/renders/"
+git -C "$tmp" add -A
+git -C "$tmp" commit -qm "${1:-Update kitchen model}"
 git -C "$tmp" push -q
 rm -rf "$tmp"
 echo "pushed to https://shkr.github.io/kitchen-3d/"
